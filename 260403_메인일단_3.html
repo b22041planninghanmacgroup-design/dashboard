@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>경영기획팀 업무현황</title>
+  <link rel="stylesheet" as="style" crossorigin
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.8/dist/web/static/pretendard.css" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+
+  <!-- 헤더 -->
+  <div class="hd">
+    <div class="hd-co"><b>한맥가족 총괄기획실</b> · 경영기획팀</div>
+    <div class="hd-sep"></div>
+    <div style="display: flex; align-items: baseline; gap: 12px;">
+      <div class="hd-ttl">업무현황</div>
+      <div id="hd-date"></div>
+    </div>
+    <div class="qt-wrap" id="qtabs">
+      <button class="qt on" onclick="setQ('전체',this)">전체</button>
+      <button class="qt" onclick="setQ('1Q',this)">2026 1Q</button>
+      <button class="qt" onclick="setQ('2Q',this)">2026 2Q</button>
+      <button class="qt" onclick="setQ('3Q',this)">2026 3Q</button>
+      <button class="qt" onclick="setQ('4Q',this)">2026 4Q</button>
+    </div>
+    <div class="hd-sep" style="margin-left:10px;"></div>
+    <!-- 관리자 모드 버튼들 -->
+    <button class="admin-hd-btn" id="addTaskBtn" onclick="openTaskModal('add')">
+      <span>＋</span> 업무 추가
+    </button>
+    <button class="admin-hd-btn export-btn" id="exportBtn" onclick="exportDataFile()">
+      <span>📥</span> 내보내기
+    </button>
+    <button class="screen-toggle" id="adminReset" onclick="resetAdminData()"
+      style="display:none; margin-right:6px; color:var(--red); border-color:var(--red);">
+      <span style="margin-right:2px;">↻</span> 데모 리셋
+    </button>
+    <button class="screen-toggle" id="adminToggle" onclick="toggleAdminMode()"
+      style="margin-right:8px; color:var(--blue); border-color:var(--blue);">
+      <span style="margin-right:2px;">⚙️</span> 관리자 모드
+    </button>
+    <button class="screen-toggle" id="reportBtn" onclick="openReportModal()"
+      style="color:var(--green); border-color:var(--green);">
+      <span style="margin-right:2px;">📝</span> 업무보고서 출력
+    </button>
+  </div>
+
+  <!-- 스크린 래퍼 -->
+  <div id="screensWrap" class="screens-wrap dual">
+
+    <!-- ══ 스크린 1 ══ -->
+    <div id="screen1" class="screen">
+
+      <!-- KPI -->
+      <div class="kpi" id="kpiEl"></div>
+
+      <!-- 스테이지: 4패널 + 디테일 -->
+      <div class="stage" id="stage">
+        <!-- 0: 프로젝트 -->
+        <div class="panel cat" id="p0" style="order:0">
+          <div class="col-hd">
+            <div class="col-hd-inner">
+              <div class="col-hd-title" data-edit="catLabel" data-gid="0">프로젝트</div>
+              <div class="col-hd-count" id="cnt0">0건</div>
+              <div class="col-pills" id="pills0"></div>
+            </div>
+          </div>
+          <div class="col-scroll" id="list0"></div>
+        </div>
+        <!-- 1: 경영지원-사업관리 -->
+        <div class="panel cat" id="p1" style="order:1">
+          <div class="col-hd">
+            <div class="col-hd-inner">
+              <div class="col-hd-title" data-edit="catLabel" data-gid="1">경영지원</div>
+              <div class="col-hd-count" id="cnt1">0건</div>
+              <div class="col-pills" id="pills1"></div>
+            </div>
+          </div>
+          <div class="col-scroll" id="list1"></div>
+        </div>
+        <!-- 2: 연구과제 -->
+        <div class="panel cat" id="p2" style="order:2">
+          <div class="col-hd">
+            <div class="col-hd-inner">
+              <div class="col-hd-title" data-edit="catLabel" data-gid="2">연구과제</div>
+              <div class="col-hd-count" id="cnt2">0건</div>
+              <div class="col-pills" id="pills2"></div>
+            </div>
+          </div>
+          <div class="col-scroll" id="list2"></div>
+        </div>
+        <!-- 3: 상시업무 -->
+        <div class="panel cat" id="p3" style="order:3">
+          <div class="col-hd">
+            <div class="col-hd-inner">
+              <div class="col-hd-title" data-edit="catLabel" data-gid="3">상시업무</div>
+              <div class="col-hd-count" id="cnt3">0건</div>
+              <div class="col-pills" id="pills3"></div>
+            </div>
+          </div>
+          <div class="col-scroll" id="list3"></div>
+        </div>
+        <!-- 상세 패널 -->
+        <div class="panel det" id="pdet" style="order:4">
+          <div class="det-empty">← 과업을 선택하면 상세 내용이 표시됩니다</div>
+        </div>
+      </div><!-- /stage -->
+
+      <!-- 첨부파일 추가 모달 (스크린1 내부) -->
+      <div class="attach-modal-overlay" id="attachModal">
+        <div class="attach-modal">
+          <div class="attach-modal-hd">
+            <span>📎 첨부문서 추가</span>
+            <button class="attach-modal-close" onclick="closeAttachModal()">✕</button>
+          </div>
+          <div class="attach-modal-body">
+            <div class="attach-modal-field">
+              <label>문서 제목</label>
+              <input type="text" id="attachLabel" placeholder="예: 구조개편 보고서" />
+            </div>
+            <div class="attach-modal-field">
+              <label>파일 URL</label>
+              <input type="text" id="attachUrl" placeholder="예: ./reports/report.html" />
+            </div>
+          </div>
+          <div class="attach-modal-footer">
+            <button class="modal-btn btn-cancel" onclick="closeAttachModal()">취소</button>
+            <button class="modal-btn btn-save" onclick="saveAttachment()">추가</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /screen1 -->
+
+    <!-- ══ 스크린 2 ══ -->
+    <div id="screen2" class="screen s2">
+      <div class="s2-layout">
+        <!-- 좌측 사이드바 -->
+        <div class="team-sidebar">
+          <!-- 1 -->
+          <div class="team-card" onclick="selectTeamMember('김우진', this)">
+            <div class="tc-avatar"><img
+                src="https://api.dicebear.com/7.x/notionists/svg?seed=Felix&backgroundColor=e2e8f0&hair=variant01&glassesProbability=0" alt=""><span
+                class="tc-badge bg-blue">팀장</span></div>
+            <div class="tc-name">김우진</div>
+            <div class="tc-stats">
+              <div class="tc-stat">
+                <div class="tc-sl">MAIN</div>
+                <div class="tc-sv">0%</div>
+              </div>
+              <div class="tc-line"></div>
+              <div class="tc-stat">
+                <div class="tc-sl">ROUTINE</div>
+                <div class="tc-sv">0%</div>
+              </div>
+            </div>
+          </div>
+          <!-- 2 -->
+          <div class="team-card" onclick="selectTeamMember('임민경', this)">
+            <div class="tc-avatar"><img
+                src="https://api.dicebear.com/7.x/notionists/svg?seed=Aneka&backgroundColor=e2e8f0&hair=variant12&glassesProbability=0" alt=""><span
+                class="tc-badge bg-navy">책임</span></div>
+            <div class="tc-name">임민경</div>
+            <div class="tc-stats">
+              <div class="tc-stat">
+                <div class="tc-sl">MAIN</div>
+                <div class="tc-sv">0%</div>
+              </div>
+              <div class="tc-line"></div>
+              <div class="tc-stat">
+                <div class="tc-sl">ROUTINE</div>
+                <div class="tc-sv">0%</div>
+              </div>
+            </div>
+          </div>
+          <!-- 3 -->
+          <div class="team-card" onclick="selectTeamMember('최선아', this)">
+            <div class="tc-avatar"><img
+                src="https://api.dicebear.com/7.x/notionists/svg?seed=Mia&backgroundColor=e2e8f0&hair=variant15&glassesProbability=100&glasses=variant02" alt=""><span
+                class="tc-badge bg-navy">책임</span></div>
+            <div class="tc-name">최선아</div>
+            <div class="tc-stats">
+              <div class="tc-stat">
+                <div class="tc-sl">MAIN</div>
+                <div class="tc-sv">0%</div>
+              </div>
+              <div class="tc-line"></div>
+              <div class="tc-stat">
+                <div class="tc-sl">ROUTINE</div>
+                <div class="tc-sv">0%</div>
+              </div>
+            </div>
+          </div>
+          <!-- 4 -->
+          <div class="team-card" onclick="selectTeamMember('김윤재', this)">
+            <div class="tc-avatar"><img
+                src="https://api.dicebear.com/7.x/notionists/svg?seed=Jack&backgroundColor=e2e8f0&hair=variant05&glassesProbability=0" alt=""><span
+                class="tc-badge bg-navy">선임</span></div>
+            <div class="tc-name">김윤재</div>
+            <div class="tc-stats">
+              <div class="tc-stat">
+                <div class="tc-sl">MAIN</div>
+                <div class="tc-sv">0%</div>
+              </div>
+              <div class="tc-line"></div>
+              <div class="tc-stat">
+                <div class="tc-sl">ROUTINE</div>
+                <div class="tc-sv">0%</div>
+              </div>
+            </div>
+          </div>
+          <!-- 5 -->
+          <div class="team-card" onclick="selectTeamMember('이미영', this)">
+            <div class="tc-avatar"><img
+                src="https://api.dicebear.com/7.x/notionists/svg?seed=Sara&backgroundColor=e2e8f0&hair=variant30&glassesProbability=100&glasses=variant02" alt=""><span
+                class="tc-badge bg-navy">선임</span></div>
+            <div class="tc-name">이미영</div>
+            <div class="tc-stats">
+              <div class="tc-stat">
+                <div class="tc-sl">MAIN</div>
+                <div class="tc-sv">0%</div>
+              </div>
+              <div class="tc-line"></div>
+              <div class="tc-stat">
+                <div class="tc-sl">ROUTINE</div>
+                <div class="tc-sv">0%</div>
+              </div>
+            </div>
+          </div>
+          <!-- 6 -->
+          <div class="team-card" onclick="selectTeamMember('국혜림', this)">
+            <div class="tc-avatar"><img
+                src="https://api.dicebear.com/7.x/notionists/svg?seed=Jocelyn&backgroundColor=e2e8f0&hair=variant36&glassesProbability=0" alt=""><span
+                class="tc-badge bg-navy">선임</span></div>
+            <div class="tc-name">국혜림</div>
+            <div class="tc-stats">
+              <div class="tc-stat">
+                <div class="tc-sl">MAIN</div>
+                <div class="tc-sv">0%</div>
+              </div>
+              <div class="tc-line"></div>
+              <div class="tc-stat">
+                <div class="tc-sl">ROUTINE</div>
+                <div class="tc-sv">0%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 우측 메인 컨텐츠 영역 -->
+        <div class="s2-inner">
+          <!-- 분기별 타임라인 (최대 35%) -->
+          <div class="s2-gantt-wrap" id="s2GanttWrap">
+            <div class="s2-gantt-hd">
+              <span class="s2-gantt-title">분기별 타임라인</span>
+              <span class="s2-gantt-sub" id="s2GanttSub"></span>
+            </div>
+            <div class="s2-gantt-scroll">
+              <div id="s2-gantt"></div>
+            </div>
+          </div>
+
+          <!-- 프로젝트 상세 + 체크리스트 -->
+          <div class="s2-det-wrap">
+            <div id="s2-detail">
+              <div class="s2-det-empty">
+                <span style="font-size:28px;opacity:.25">←</span>
+                <span>스크린 1에서 카드를 선택하면 상세 내용이 표시됩니다</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ 업무 추가/수정 모달 ══ -->
+      <div class="modal-overlay" id="taskModal">
+        <div class="modal-container">
+          <div class="modal-hd">
+            <div class="modal-hd-title" id="modalTitle">업무 추가</div>
+            <button class="modal-hd-close" onclick="closeTaskModal()">✕</button>
+          </div>
+          <div class="modal-body">
+            <div class="modal-grid">
+              <!-- 카테고리 -->
+              <div class="modal-field">
+                <label>카테고리 <span class="req">*</span></label>
+                <select id="mfGroup">
+                  <option value="0">프로젝트</option>
+                  <option value="1">경영지원</option>
+                  <option value="2">연구과제</option>
+                  <option value="3">상시업무</option>
+                </select>
+              </div>
+              <!-- 분기 -->
+              <div class="modal-field">
+                <label>분기 <span class="req">*</span></label>
+                <select id="mfQ">
+                  <option value="1Q">1Q</option>
+                  <option value="2Q">2Q</option>
+                  <option value="3Q">3Q</option>
+                  <option value="4Q">4Q</option>
+                  <option value="상시">상시</option>
+                  <option value="전체">전체</option>
+                </select>
+              </div>
+              <!-- 업무명 -->
+              <div class="modal-field full">
+                <label>업무명 <span class="req">*</span></label>
+                <input type="text" id="mfTitle" placeholder="업무명을 입력하세요">
+              </div>
+              <!-- PM -->
+              <div class="modal-field">
+                <label>PM (담당자) <span class="req">*</span></label>
+                <input type="text" id="mfPm" placeholder="예: 김우진">
+              </div>
+              <!-- 담당자 -->
+              <div class="modal-field">
+                <label>실무 담당</label>
+                <input type="text" id="mfOwner" placeholder="예: 이미영 (없으면 비워두세요)">
+              </div>
+              <!-- 우선순위 -->
+              <div class="modal-field">
+                <label>우선순위</label>
+                <select id="mfPriority">
+                  <option value="상">상</option>
+                  <option value="중" selected>중</option>
+                </select>
+              </div>
+              <!-- 상태 -->
+              <div class="modal-field">
+                <label>상태</label>
+                <select id="mfStatus">
+                  <option value="예정">예정</option>
+                  <option value="진행" selected>진행</option>
+                  <option value="완료">완료</option>
+                  <option value="보류">보류</option>
+                  <option value="긴급">긴급</option>
+                  <option value="지연">지연</option>
+                  <option value="검토중">검토중</option>
+                </select>
+              </div>
+              <!-- 진행률 -->
+              <div class="modal-field full">
+                <label>진행률</label>
+                <div class="modal-range-wrap">
+                  <input type="range" id="mfPct" min="0" max="100" step="5" value="0"
+                    oninput="document.getElementById('mfPctVal').textContent=this.value+'%'">
+                  <span class="modal-range-val" id="mfPctVal">0%</span>
+                </div>
+              </div>
+              <!-- 시작일 -->
+              <div class="modal-field">
+                <label>시작일</label>
+                <input type="date" id="mfStart">
+              </div>
+              <!-- 종료일 -->
+              <div class="modal-field">
+                <label>종료일 / 마감</label>
+                <input type="text" id="mfEnd" placeholder="예: 2026-06-30 또는 상시">
+              </div>
+              <!-- 협업팀 -->
+              <div class="modal-field full">
+                <label>협업팀 <span style="font-weight:400;color:var(--t3)">(쉼표로 구분)</span></label>
+                <input type="text" id="mfCollab" placeholder="예: 법무법인, 회계법인">
+              </div>
+              <!-- 업무 개요 -->
+              <div class="modal-field full">
+                <label>업무 개요/목적</label>
+                <textarea id="mfContent" rows="4" placeholder="업무 배경, 목적, 범위 등을 입력하세요"></textarea>
+              </div>
+              <!-- 이슈사항 -->
+              <div class="modal-field full">
+                <label>이슈사항</label>
+                <textarea id="mfIssue" rows="3" placeholder="주요 이슈 및 의사결정 사항"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button class="modal-btn btn-delete" id="modalDeleteBtn" onclick="deleteTaskFromModal()"
+              style="display:none;">🗑 삭제</button>
+            <div class="spacer"></div>
+            <button class="modal-btn btn-cancel" onclick="closeTaskModal()">취소</button>
+            <button class="modal-btn btn-save" onclick="saveTask()">저장</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ 업무보고서 모달 ══ -->
+      <div class="modal-overlay" id="reportModal">
+        <div class="modal-container" style="width:900px;max-width:96vw;max-height:92vh;">
+          <div class="modal-hd">
+            <div class="modal-hd-title" id="reportModalTitle">📝 업무보고서</div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <select id="reportType" onchange="generateReport()"
+                style="font-family:var(--fn);font-size:14px;padding:6px 12px;border:1px solid var(--bd);border-radius:6px;cursor:pointer;">
+                <option value="weekly">주간 업무보고서</option>
+                <option value="monthly">월간 업무보고서</option>
+                <option value="quarterly">분기 업무보고서</option>
+              </select>
+              <button class="modal-btn btn-save" onclick="printReport()" style="padding:8px 18px;">🖨 출력</button>
+              <button class="modal-hd-close" onclick="closeReportModal()">✕</button>
+            </div>
+          </div>
+          <div class="modal-body" style="padding:0;">
+            <div id="reportContent" style="padding:32px 40px; font-family:'Pretendard',sans-serif;"></div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /screen2 -->
+
+  </div><!-- /screensWrap -->
+  <script src="./data.js"></script>
+  <script src="./script.js"></script>
+</body>
+
+</html>

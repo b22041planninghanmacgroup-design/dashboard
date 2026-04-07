@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { font-family: sans-serif; }
+  .grid { display: flex; flex-wrap: wrap; gap: 10px; }
+  .item { display:flex; flex-direction: column; align-items: center; border:1px solid #ccc; padding: 5px; }
+  img { width: 80px; height: 80px; }
+  h3 { margin-bottom: 20px; }
+</style>
+</head>
+<body>
+  <h3>Glasses variants</h3>
+  <div class="grid" id="glasses-grid"></div>
+  
+  <h3>Hair variants (No glasses)</h3>
+  <div class="grid" id="hair-grid"></div>
+
+<script>
+  let glassesGrid = document.getElementById('glasses-grid');
+  // Just show variant 1 to 5 for glasses to see which looks good
+  for(let i=1; i<=10; i++) {
+    let num = i.toString().padStart(2, '0');
+    let url = \`https://api.dicebear.com/7.x/notionists/svg?seed=Base&glassesProbability=100&glasses=variant\${num}\`;
+    glassesGrid.innerHTML += \`<div class="item"><img src="\${url}"><span>G\${num}</span></div>\`;
+  }
+
+  let hairGrid = document.getElementById('hair-grid');
+  // Hair variants going up to 62
+  for(let i=1; i<=62; i++) {
+    let num = i.toString().padStart(2, '0');
+    let url = \`https://api.dicebear.com/7.x/notionists/svg?seed=Base\${num}&glassesProbability=0&hair=variant\${num}\`;
+    hairGrid.innerHTML += \`<div class="item"><img src="\${url}"><span>H\${num}</span></div>\`;
+  }
+</script>
+</body>
+</html>
